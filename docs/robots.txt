@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://hikotei.github.io/2026_05_badische_meile_stats/sitemap.xml

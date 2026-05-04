@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Badische Meile 2026 – Race Stats</title>
+<meta name="description" content="Interactive race stats &amp; ego check for 5,734 finishers of Badische Meile 2026 — find your rank, percentile, age-group standing, and fun comparisons.">
+<meta name="robots" content="index, follow">
+<meta name="author" content="hikotei">
+<link rel="canonical" href="https://hikotei.github.io/2026_05_badische_meile_stats/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://hikotei.github.io/2026_05_badische_meile_stats/">
+<meta property="og:title" content="Badische Meile 2026 – Race Stats">
+<meta property="og:description" content="Interactive race stats &amp; ego check for 5,734 finishers of Badische Meile 2026 — find your rank, percentile, age-group standing, and fun comparisons.">
+<meta property="og:image" content="https://hikotei.github.io/2026_05_badische_meile_stats/images/plot_overview.png">
+<meta property="og:locale" content="de_DE">
+<meta property="og:site_name" content="Badische Meile 2026 Stats">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Badische Meile 2026 – Race Stats">
+<meta name="twitter:description" content="Interactive race stats &amp; ego check for 5,734 finishers of Badische Meile 2026 — find your rank, percentile, age-group standing, and fun comparisons.">
+<meta name="twitter:image" content="https://hikotei.github.io/2026_05_badische_meile_stats/images/plot_overview.png">
+
+<!-- JSON-LD Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": "https://hikotei.github.io/2026_05_badische_meile_stats/",
+      "url": "https://hikotei.github.io/2026_05_badische_meile_stats/",
+      "name": "Badische Meile 2026 – Race Stats",
+      "description": "Interactive race stats and ego check for 5,734 finishers of Badische Meile 2026.",
+      "inLanguage": "de"
+    },
+    {
+      "@type": "SportsEvent",
+      "name": "Badische Meile 2026",
+      "description": "8.889 km running race in Freiburg, Germany with 5,734 finishers.",
+      "sport": "Running",
+      "location": {
+        "@type": "Place",
+        "name": "Freiburg im Breisgau",
+        "addressCountry": "DE"
+      },
+      "startDate": "2026-05",
+      "url": "https://www.badische-meile.de/"
+    }
+  ]
+}
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #222; }
+
+  header {
+    background: #1a1a2e;
+    color: white;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+  }
+  header h1 { font-size: 2rem; letter-spacing: 0.05em; }
+  header p { color: #aaa; margin-top: 0.4rem; font-size: 0.95rem; }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 2rem 1rem; }
+
+  h2 { font-size: 1.35rem; margin: 2rem 0 1rem; border-left: 4px solid #1a1a2e; padding-left: 0.7rem; }
+
+  /* Ego Check */
+  .ego-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+    margin-bottom: 1rem;
+  }
+  .ego-form label { font-size: 0.85rem; color: #555; display: block; margin-bottom: 0.3rem; }
+  .ego-form input {
+    padding: 0.55rem 0.85rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+    width: 200px;
+  }
+  .ego-form input:focus { outline: 2px solid #1a1a2e; border-color: transparent; }
+  .ego-form button {
+    padding: 0.55rem 1.4rem;
+    background: #1a1a2e;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .ego-form button:hover { background: #2e2e5e; }
+  .hint { color: #888; font-size: 0.82rem; margin-bottom: 1rem; }
+
+  /* Not found + suggestions */
+  #ego-error {
+    display: none;
+    color: #c0392b;
+    font-size: 0.95rem;
+    margin-bottom: 0.75rem;
+  }
+  #ego-error.show { display: block; }
+  .suggestions { margin-top: 0.6rem; font-size: 0.85rem; color: #444; }
+  .suggestions span { font-weight: 600; }
+  .suggestion-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
+  .chip {
+    background: #1a1a2e;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .chip:hover { background: #2e2e5e; }
+
+  /* Terminal output */
+  #ego-result {
+    display: none;
+    background: #0d1117;
+    color: #e6edf3;
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    font-family: 'Menlo', 'Consolas', 'Monaco', monospace;
+    font-size: 0.85rem;
+    line-height: 1.55;
+    white-space: pre;
+    overflow-x: auto;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  }
+
+  /* Result action buttons */
+  .result-actions { display: none; gap: 0.5rem; margin-top: 0.75rem; }
+  .result-actions.show { display: flex; }
+  .result-actions button {
+    padding: 0.45rem 1.1rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: background 0.15s;
+    color: white;
+  }
+  #save-btn { background: #238636; }
+  #save-btn:hover { background: #2ea043; }
+  #copy-btn { background: #1a1a2e; }
+  #copy-btn:hover { background: #2e2e5e; }
+  #copy-btn.copied { background: #6e40c9; }
+  #copy-png-btn { background: #1a1a2e; }
+  #copy-png-btn:hover { background: #2e2e5e; }
+  #copy-png-btn.copied { background: #6e40c9; }
+
+  /* Plots */
+  .plot-full { margin-bottom: 1.5rem; }
+  .plot-full img {
+    width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    background: white;
+    cursor: zoom-in;
+  }
+  .plots-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .plots-2col img {
+    width: 100%;
+    height: 260px;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    background: white;
+    padding: 4px;
+    cursor: zoom-in;
+  }
+  @media (max-width: 640px) {
+    .plots-2col { grid-template-columns: 1fr; }
+  }
+
+  footer { text-align: center; padding: 2rem; color: #aaa; font-size: 0.85rem; }
+
+  /* Lightbox */
+  #lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.88);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  #lightbox.open { display: flex; }
+  #lightbox img {
+    max-width: 94vw;
+    max-height: 92vh;
+    border-radius: 6px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    object-fit: contain;
+  }
+  #lightbox-close {
+    position: fixed;
+    top: 1rem;
+    right: 1.25rem;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    line-height: 1;
+    opacity: 0.8;
+  }
+  #lightbox-close:hover { opacity: 1; }
+</style>
+
+<script data-goatcounter="https://hikotei.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+ 
+</head>
+<body>
+
+<header>
+  <h1>🏃 Badische Meile 2026</h1>
+  <p>8.889 km · 5,734 finishers · Race Statistics &amp; Ego Check</p>
+</header>
+
+<main>
+
+  <h2>🪞 Ego Check</h2>
+  <p class="hint">Enter your name as it appeared on the results — any capitalisation works.</p>
+  <div class="ego-form">
+    <div>
+      <label for="first-name">First Name</label>
+      <input id="first-name" type="text" placeholder="Max" autocomplete="off">
+    </div>
+    <div>
+      <label for="last-name">Last Name</label>
+      <input id="last-name" type="text" placeholder="Mustermann" autocomplete="off">
+    </div>
+    <button onclick="runEgoCheck()">Check Ego</button>
+  </div>
+
+  <div id="ego-error"></div>
+  <div id="ego-result"></div>
+  <div class="result-actions" id="result-actions">
+    <button id="copy-btn" onclick="copyText()">📋 Copy text</button>
+    <button id="copy-png-btn" onclick="copyPng()">🖼️ Copy PNG</button>
+    <button id="save-btn" onclick="saveAsPng()">💾 Save as PNG</button>
+  </div>
+
+  <h2>Race Statistics</h2>
+  <div class="plot-full">
+    <img src="images/plot_overview.png" alt="Badische Meile 2026: age distribution, finish time distribution, and top clubs by finisher count" onclick="openLightbox(this.src)">
+  </div>
+  <div class="plots-2col">
+    <img src="images/plot_age_vs_pace.png" alt="Badische Meile 2026: age vs pace scatter plot with regression line" onclick="openLightbox(this.src)">
+    <img src="images/plot_time_by_agegroup.png" alt="Badische Meile 2026: finishing times by age group and gender as box plots" onclick="openLightbox(this.src)">
+  </div>
+  <div class="plots-2col">
+    <img src="images/plot_fastest_clubs.png" alt="Badische Meile 2026: fastest clubs by average finish time (clubs with 5+ runners)" onclick="openLightbox(this.src)">
+    <img src="images/plot_cumulative.png" alt="Badische Meile 2026: cumulative finish distribution by gender (ECDF) with 1-hour mark" onclick="openLightbox(this.src)">
+  </div>
+
+</main>
+
+<footer>
+  Unofficial fan stats page · Data sourced from the official <a href="https://badischemeile.de" target="_blank" rel="noopener" style="color:#aaa">Badische Meile 2026</a> results.<br>
+  For data removal requests: <a href="mailto:hikotei@proton.me" style="color:#aaa">hikotei@proton.me</a>
+</footer>
+
+<div id="lightbox">
+  <button id="lightbox-close" onclick="closeLightbox()">&#x2715;</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<script>
+let raceData = [];
+
+fetch('data/race_results_cleaned.csv')
+  .then(r => r.text())
+  .then(text => {
+    const result = Papa.parse(text, { header: true, skipEmptyLines: true });
+    raceData = result.data.map(row => ({
+      ...row,
+      zeit_min:   parseFloat(row.zeit_min),
+      age:        row.age !== '' ? parseInt(row.age) : NaN,
+      platz:      parseInt(row.platz),
+      percentile: parseFloat(row.percentile),
+    }));
+  });
+
+// ── Lightbox ──────────────────────────────────────────────────────────────────
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+document.getElementById('lightbox').addEventListener('click', e => {
+  if (e.target === document.getElementById('lightbox')) closeLightbox();
+});
+
+// ── Fuzzy matching ────────────────────────────────────────────────────────────
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m + 1}, (_, i) =>
+    Array.from({length: n + 1}, (_, j) => i === 0 ? j : j === 0 ? i : 0));
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i-1] === b[j-1]
+        ? dp[i-1][j-1]
+        : 1 + Math.min(dp[i-1][j-1], dp[i-1][j], dp[i][j-1]);
+  return dp[m][n];
+}
+
+function getSuggestions(fnUp, lnUp) {
+  // Score each runner by combined edit distance of both names
+  const scored = raceData.map(r => ({
+    r,
+    dist: levenshtein(r.first_name.toUpperCase(), fnUp) +
+          levenshtein(r.last_name.toUpperCase(), lnUp)
+  }));
+  scored.sort((a, b) => a.dist - b.dist);
+  // Return top 5 with distance ≤ 6 (generous enough for common typos)
+  return scored.slice(0, 5).filter(s => s.dist <= 6).map(s => s.r);
+}
+
+// ── Ego check ─────────────────────────────────────────────────────────────────
+const SEP1 = '= '.repeat(40);
+const SEP2 = '- '.repeat(40);
+
+function fillAndSearch(firstName, lastName) {
+  document.getElementById('first-name').value = firstName;
+  document.getElementById('last-name').value  = lastName;
+  runEgoCheck();
+}
+
+function runEgoCheck() {
+  const firstName = document.getElementById('first-name').value.trim();
+  const lastName  = document.getElementById('last-name').value.trim();
+  const errEl     = document.getElementById('ego-error');
+  const resEl     = document.getElementById('ego-result');
+  const actEl     = document.getElementById('result-actions');
+
+  errEl.innerHTML = ''; errEl.className = '';
+  resEl.textContent = ''; resEl.style.display = 'none';
+  actEl.className = 'result-actions';
+
+  if (!firstName || !lastName) {
+    errEl.textContent = 'Please enter both first and last name.';
+    errEl.className = 'show';
+    return;
+  }
+
+  const fnUp = firstName.toUpperCase();
+  const lnUp = lastName.toUpperCase();
+
+  const runners = raceData.filter(r =>
+    r.first_name.toUpperCase() === fnUp &&
+    r.last_name.toUpperCase()  === lnUp
+  );
+
+  if (runners.length === 0) {
+    const suggestions = getSuggestions(fnUp, lnUp);
+    let html = `<strong>"${firstName} ${lastName}"</strong> not found.`;
+    if (suggestions.length > 0) {
+      html += `<div class="suggestions"><span>Did you mean...</span>
+        <div class="suggestion-chips">`;
+      suggestions.forEach(r => {
+        html += `<button class="chip" onclick="fillAndSearch('${r.first_name}','${r.last_name}')">${r.first_name} ${r.last_name}</button>`;
+      });
+      html += `</div></div>`;
+    }
+    errEl.innerHTML = html;
+    errEl.className = 'show';
+    return;
+  }
+
+  const runner     = runners[0];
+  const targetTime = runner.zeit_min;
+  const runnerAge  = runner.age;
+  const runnerRank = runner.platz;
+  const pct        = runner.percentile.toFixed(2);
+
+  const fasterRunners = raceData.filter(r => r.zeit_min < targetTime);
+  const fasterWithAge = fasterRunners.filter(r => !isNaN(r.age) && r.age > 0);
+
+  let out = '';
+  out += SEP1 + '\n';
+  out += `🏁 THE EGO CHECK REPORT: ${runner.first_name} ${runner.last_name}\n`;
+  out += SEP2 + '\n';
+  out += `Your Time: ${runner.zeit} | Overall Rank: #${runnerRank} | Top ${pct}%\n`;
+  out += SEP2 + '\n';
+
+  if (fasterRunners.length === 0) {
+    out += `Congratulations ${runner.first_name}, you literally won the race. No one was faster.\n`;
+    out += SEP1 + '\n';
+    resEl.textContent = out; resEl.style.display = 'block';
+    actEl.className = 'result-actions show';
+    return;
+  }
+
+  // CLASS REUNION
+  if (!isNaN(runnerAge)) {
+    const sameAge       = raceData.filter(r => r.age === runnerAge);
+    const sameAgeFaster = sameAge.filter(r => r.zeit_min < targetTime);
+    const ageRank       = sameAgeFaster.length + 1;
+    const agePct        = ((ageRank / sameAge.length) * 100).toFixed(1);
+    if (sameAge.length > 1) {
+      out += `\n🎂 THE CLASS REUNION (Age ${runnerAge}):\n`;
+      out += `   There were ${sameAge.length} runners exactly your age on the course.\n`;
+      out += `   Among them, you placed #${ageRank} (Top ${agePct}%).\n`;
+      if (sameAgeFaster.length === 0)
+        out += `   You are the undisputed champion of your birth year. Flawless victory.\n`;
+    }
+  }
+
+  // VETERAN & ROOKIE
+  if (fasterWithAge.length > 0) {
+    const oldest    = fasterWithAge.reduce((a, b) => b.age > a.age ? b : a);
+    const yrsOlder  = !isNaN(runnerAge) ? ` (${oldest.age - runnerAge} years older than you!)` : '';
+    out += `\n👴 THE VETERAN:\n`;
+    out += `   The oldest person to beat you was ${oldest.first_name} ${oldest.last_name}.\n`;
+    out += `   They are ${oldest.age} years old${yrsOlder} and finished in ${oldest.zeit}.\n`;
+
+    const youngest   = fasterWithAge.reduce((a, b) => b.age < a.age ? b : a);
+    const yrsYounger = !isNaN(runnerAge) ? ` (${runnerAge - youngest.age} years younger than you!)` : '';
+    out += `\n👶 THE ROOKIE:\n`;
+    out += `   The youngest person to beat you was ${youngest.first_name} ${youngest.last_name}.\n`;
+    out += `   They are only ${youngest.age} years old${yrsYounger} and finished in ${youngest.zeit}.\n`;
+  }
+
+  // SUPER SENIORS
+  const seniorsFaster = fasterWithAge.filter(r => r.age >= 70).length;
+  out += `\n🦾 THE SUPER SENIORS:\n`;
+  out += seniorsFaster > 0
+    ? `   Ouch. There were ${seniorsFaster} runners aged 70 or older who finished before you.\n`
+    : `   Good news: You successfully outran every single 70+ year old in the race!\n`;
+
+  // IDENTITY THEFT
+  // fasterRunners is already sorted by platz (rank) ascending from raceData order
+  const exactClones     = fasterRunners.filter(r => r.first_name.toUpperCase() === fnUp && r.last_name.toUpperCase() === lnUp);
+  const firstNameRivals = fasterRunners.filter(r => r.first_name.toUpperCase() === fnUp && r.last_name.toUpperCase() !== lnUp);
+  const lastNameRivals  = fasterRunners.filter(r => r.last_name.toUpperCase()  === lnUp && r.first_name.toUpperCase() !== fnUp);
+
+  const medianOf = arr => arr[Math.floor(arr.length / 2)];
+
+  out += `\n🪪 THE IDENTITY THEFT:\n`;
+  if (exactClones.length > 0) {
+    const clone = exactClones[0];
+    out += `   🚨 DOPPELGÄNGER ALERT 🚨\n`;
+    out += `   There is literally another '${runner.first_name} ${runner.last_name}' who ran this race.\n`;
+    out += `   Worse? They beat you by ${(targetTime - clone.zeit_min).toFixed(1)} minutes.\n`;
+    out += `   They are officially the superior '${runner.first_name} ${runner.last_name}'.\n`;
+  } else if (firstNameRivals.length > 0) {
+    const rival = medianOf(firstNameRivals);
+    const minDiff = (targetTime - rival.zeit_min).toFixed(1);
+    out += `   You aren't even an average '${runner.first_name}'. ${firstNameRivals.length} faster ${runner.first_name}s exist.\n`;
+    out += `   The most mid ${runner.first_name} on the course — ${rival.first_name} ${rival.last_name} — still beat you by ${minDiff} min.\n`;
+  } else if (lastNameRivals.length > 0) {
+    const rival = medianOf(lastNameRivals);
+    const minDiff = (targetTime - rival.zeit_min).toFixed(1);
+    out += `   You aren't even an average '${runner.last_name}'. ${lastNameRivals.length} faster ${runner.last_name}s exist.\n`;
+    out += `   The most mid ${runner.last_name} on the course — ${rival.first_name} ${rival.last_name} — still beat you by ${minDiff} min.\n`;
+  } else {
+    out += `   No one shares your name among the faster finishers. You are the one and only.\n`;
+  }
+
+  // SPRINT REGRET
+  const sprintRivals = fasterRunners
+    .map(r => ({ ...r, secDiff: Math.round((targetTime - r.zeit_min) * 60) }))
+    .filter(r => r.secDiff >= 1 && r.secDiff <= 10)
+    .sort((a, b) => a.secDiff - b.secDiff);
+  out += `\n⏱️ THE SPRINT REGRET:\n`;
+  if (sprintRivals.length > 0) {
+    const c = sprintRivals[0];
+    out += `   If you had just pushed a tiny bit harder, you could have beaten ${c.first_name} ${c.last_name}.\n`;
+    out += `   They beat you by exactly ${c.secDiff} second${c.secDiff === 1 ? '' : 's'}.\n`;
+    if (sprintRivals.length > 3)
+      out += `   In fact, a total of ${sprintRivals.length} runners sneaked past you in those last 10 secs.\n`;
+  } else {
+    out += `   You had plenty of breathing room. The person ahead was either a tie or way out of sight.\n`;
+  }
+
+  out += '\n' + SEP1;
+  resEl.textContent = out;
+  resEl.style.display = 'block';
+  actEl.className = 'result-actions show';
+}
+
+// ── Copy text ─────────────────────────────────────────────────────────────────
+function copyText() {
+  const text = document.getElementById('ego-result').textContent;
+  const btn  = document.getElementById('copy-btn');
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ Copied!';
+    btn.className = 'copied';
+    setTimeout(() => { btn.textContent = '📋 Copy text'; btn.className = ''; }, 2000);
+  });
+}
+
+// ── Shared Canvas Generation ──────────────────────────────────────────────────
+function generateEgoCanvas() {
+  const text  = document.getElementById('ego-result').textContent;
+  const lines = text.split('\n');
+
+  const FONT_SIZE   = 14;
+  const LINE_HEIGHT = 22;
+  const PAD         = 28;
+  const FONT        = `${FONT_SIZE}px Menlo, Consolas, Monaco, monospace`;
+
+  // Measure longest line
+  const probe = document.createElement('canvas').getContext('2d');
+  probe.font  = FONT;
+  const maxW  = Math.max(...lines.map(l => probe.measureText(l).width));
+
+  const W = Math.ceil(maxW) + PAD * 2;
+  const H = lines.length * LINE_HEIGHT + PAD * 2;
+
+  const canvas = document.createElement('canvas');
+  // 2× for retina
+  canvas.width  = W * 2;
+  canvas.height = H * 2;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+
+  // Background
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, W, H);
+
+  // Text
+  ctx.font      = FONT;
+  ctx.fillStyle = '#e6edf3';
+  ctx.textBaseline = 'top';
+  lines.forEach((line, i) => {
+    ctx.fillText(line, PAD, PAD + i * LINE_HEIGHT);
+  });
+
+  return canvas;
+}
+
+// ── Copy PNG ──────────────────────────────────────────────────────────────────
+function copyPng() {
+  const canvas = generateEgoCanvas();
+  const btn = document.getElementById('copy-png-btn');
+  // Pass a Promise<Blob> directly so ClipboardItem is created synchronously
+  // within the user-gesture context — required by browsers for clipboard access.
+  const blobPromise = new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+  try {
+    const item = new ClipboardItem({ 'image/png': blobPromise });
+    navigator.clipboard.write([item]).then(() => {
+      btn.textContent = '✓ Copied!';
+      btn.className = 'copied';
+      setTimeout(() => { btn.textContent = '🖼️ Copy PNG'; btn.className = ''; }, 2000);
+    }).catch(e => {
+      console.error('Clipboard copy failed:', e);
+      alert('Failed to copy PNG to clipboard.');
+    });
+  } catch (e) {
+    console.error('Clipboard copy failed:', e);
+    alert('Failed to copy PNG to clipboard.');
+  }
+}
+
+// ── Save as PNG ───────────────────────────────────────────────────────────────
+function saveAsPng() {
+  const canvas = generateEgoCanvas();
+  const firstName = document.getElementById('first-name').value.trim();
+  const lastName = document.getElementById('last-name').value.trim();
+  let filename = 'ego_check.png';
+  if (firstName && lastName) {
+    filename = `ego_check_${firstName}_${lastName}`.replace(/[^a-z0-9_]/gi, '_') + '.png';
+  }
+
+  canvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, 'image/png');
+}
+
+// Enter key support
+['first-name', 'last-name'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') runEgoCheck();
+  });
+});
+</script>
+</body>
+</html>
