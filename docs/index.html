@@ -107,6 +107,9 @@
   #copy-btn { background: #1a1a2e; }
   #copy-btn:hover { background: #2e2e5e; }
   #copy-btn.copied { background: #6e40c9; }
+  #copy-png-btn { background: #1a1a2e; }
+  #copy-png-btn:hover { background: #2e2e5e; }
+  #copy-png-btn.copied { background: #6e40c9; }
 
   /* Plots */
   .plot-full { margin-bottom: 1.5rem; }
@@ -202,8 +205,9 @@
   <div id="ego-error"></div>
   <div id="ego-result"></div>
   <div class="result-actions" id="result-actions">
-    <button id="save-btn" onclick="saveAsPng()">⬇ Save as PNG</button>
     <button id="copy-btn" onclick="copyText()">⎘ Copy text</button>
+    <button id="copy-png-btn" onclick="copyPng()">📋 Copy PNG</button>
+    <button id="save-btn" onclick="saveAsPng()">⬇ Save as PNG</button>
   </div>
 
   <h2>Race Statistics</h2>
@@ -459,8 +463,8 @@ function copyText() {
   });
 }
 
-// ── Save as PNG ───────────────────────────────────────────────────────────────
-function saveAsPng() {
+// ── Shared Canvas Generation ──────────────────────────────────────────────────
+function generateEgoCanvas() {
   const text  = document.getElementById('ego-result').textContent;
   const lines = text.split('\n');
 
@@ -499,11 +503,44 @@ function saveAsPng() {
     ctx.fillText(line, PAD, PAD + i * LINE_HEIGHT);
   });
 
+  return canvas;
+}
+
+// ── Copy PNG ──────────────────────────────────────────────────────────────────
+function copyPng() {
+  const canvas = generateEgoCanvas();
+  const btn = document.getElementById('copy-png-btn');
+  canvas.toBlob(blob => {
+    if (!blob) return;
+    try {
+      const item = new ClipboardItem({ 'image/png': blob });
+      navigator.clipboard.write([item]).then(() => {
+        btn.textContent = '✓ Copied!';
+        btn.className = 'copied';
+        setTimeout(() => { btn.textContent = '📋 Copy PNG'; btn.className = ''; }, 2000);
+      });
+    } catch (e) {
+      console.error('Clipboard copy failed:', e);
+      alert('Failed to copy PNG to clipboard.');
+    }
+  }, 'image/png');
+}
+
+// ── Save as PNG ───────────────────────────────────────────────────────────────
+function saveAsPng() {
+  const canvas = generateEgoCanvas();
+  const firstName = document.getElementById('first-name').value.trim();
+  const lastName = document.getElementById('last-name').value.trim();
+  let filename = 'ego_check.png';
+  if (firstName && lastName) {
+    filename = `ego_check_${firstName}_${lastName}`.replace(/[^a-z0-9_]/gi, '_') + '.png';
+  }
+
   canvas.toBlob(blob => {
     const url = URL.createObjectURL(blob);
     const a   = document.createElement('a');
     a.href     = url;
-    a.download = 'ego_check.png';
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   }, 'image/png');
