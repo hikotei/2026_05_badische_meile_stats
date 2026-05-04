@@ -442,7 +442,7 @@ function runEgoCheck() {
     out += `   You had plenty of breathing room. The person ahead was either a tie or way out of sight.\n`;
   }
 
-  out += SEP1 + '\n';
+  out += '\n' + SEP1;
   resEl.textContent = out;
   resEl.style.display = 'block';
   actEl.className = 'result-actions show';
