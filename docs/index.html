@@ -133,7 +133,7 @@
     border-radius: 8px;
     padding: 1.25rem 1.5rem;
     font-family: 'Menlo', 'Consolas', 'Monaco', monospace;
-    font-size: 0.85rem;
+    font-size: clamp(0.72rem, 2.4vw, 0.85rem);
     line-height: 1.55;
     white-space: pre;
     overflow-x: auto;
@@ -141,7 +141,7 @@
   }
 
   /* Result action buttons */
-  .result-actions { display: none; gap: 0.5rem; margin-top: 0.75rem; }
+  .result-actions { display: none; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
   .result-actions.show { display: flex; }
   .result-actions button {
     padding: 0.45rem 1.1rem;
@@ -188,6 +188,9 @@
   }
   @media (max-width: 640px) {
     .plots-2col { grid-template-columns: 1fr; }
+    #ego-result { padding: 0.85rem 0.9rem; }
+    .ego-form input { width: 100%; }
+    .ego-form > div { width: 100%; }
   }
 
   footer { text-align: center; padding: 2rem; color: #aaa; font-size: 0.85rem; }
@@ -340,9 +343,6 @@ function getSuggestions(fnUp, lnUp) {
 }
 
 // ── Ego check ─────────────────────────────────────────────────────────────────
-const SEP1 = '= '.repeat(40);
-const SEP2 = '- '.repeat(40);
-
 function fillAndSearch(firstName, lastName) {
   document.getElementById('first-name').value = firstName;
   document.getElementById('last-name').value  = lastName;
@@ -398,6 +398,19 @@ function runEgoCheck() {
 
   const fasterRunners = raceData.filter(r => r.zeit_min < targetTime);
   const fasterWithAge = fasterRunners.filter(r => !isNaN(r.age) && r.age > 0);
+
+  resEl.style.display = 'block';
+  const _cw = resEl.clientWidth;
+  resEl.style.display = 'none';
+  const _usable = (_cw > 48) ? _cw - 48 : 0;
+  const _fs = parseFloat(getComputedStyle(resEl).fontSize);
+  const _charW = _fs * 0.601;
+  const _maxPairs = (_usable > 0 && _charW > 0)
+    ? Math.floor(_usable / (_charW * 2))
+    : 40;
+  const SEP_N = Math.max(20, Math.min(40, _maxPairs));
+  const SEP1 = '= '.repeat(SEP_N);
+  const SEP2 = '- '.repeat(SEP_N);
 
   let out = '';
   out += SEP1 + '\n';
